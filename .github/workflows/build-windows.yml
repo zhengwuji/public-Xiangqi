@@ -2,9 +2,16 @@ name: Build Windows EXE
 
 on:
   push:
+    branches:
+      - master
+    paths-ignore:
+      - 'README.md'
     tags:
       - 'v*'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -28,7 +35,7 @@ jobs:
           if ("${{ github.ref }}" -match "^refs/tags/") {
             $v = "${{ github.ref_name }}" -replace '^v',''
           } else {
-            $v = "1.0.0"
+            $v = "1.9.${{ github.run_number }}"
           }
           Write-Host "app-version = $v"
           echo "version=$v" >> $env:GITHUB_OUTPUT
@@ -134,11 +141,31 @@ jobs:
           name: TChess-Windows
           path: dist/TChess-Windows.zip
 
+      - name: Generate release notes (中文)
+        shell: pwsh
+        run: |
+          # 用最近一次推送的提交信息作为中文更新内容
+          $msg = git log -1 --pretty=format:"%s%n%n%b"
+          if ([string]::IsNullOrWhiteSpace(($msg -join ""))) {
+            $msg = "自动构建，无提交说明"
+          }
+          if ("${{ github.ref }}" -match "^refs/tags/") {
+            $header = "正式版本 ${{ github.ref_name }}"
+          } else {
+            $header = "自动构建 #{0}（{1} UTC）" -f "${{ github.run_number }}", (Get-Date -Format 'yyyy-MM-dd HH:mm')
+          }
+          $content = $header + "`n`n## 更新内容`n`n" + ($msg -join "`n") + "`n`n---`n附件 TChess-Windows.zip 为 Windows x64 绿色版，解压后运行 TChess.exe 即可（不含象棋引擎，请自行下载放入 model 目录）。`n"
+          $content | Out-File -FilePath release_notes.txt -Encoding utf8
+          Write-Host "---- release notes ----"
+          Get-Content release_notes.txt
+
       - name: Create Release and Upload
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: dist/TChess-Windows.zip
-          generate_release_notes: true
+          body_path: release_notes.txt
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('build-{0}', github.run_number) }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && format('TChess {0}', github.ref_name) || format('TChess 自动构建 #{0}', github.run_number) }}
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
