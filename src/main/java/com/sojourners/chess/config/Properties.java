@@ -2,6 +2,7 @@ package com.sojourners.chess.config;
 
 import com.sojourners.chess.board.ChessBoard;
 import com.sojourners.chess.enginee.Engine;
+import com.sojourners.chess.linker.LinkScheme;
 import com.sojourners.chess.model.EngineConfig;
 import com.sojourners.chess.openbook.MoveRule;
 import com.sojourners.chess.util.PathUtils;
@@ -40,6 +41,13 @@ public class Properties implements Serializable {
 
     private String engineName;
 
+    private String redEngineName;
+    private String blackEngineName;
+    private int redThreadNum = 1;
+    private int blackThreadNum = 1;
+    private int redHashSize = 16;
+    private int blackHashSize = 16;
+
     private List<EngineConfig> engineConfigList = new ArrayList<>();
 
     private Engine.AnalysisModel analysisModel;
@@ -58,6 +66,16 @@ public class Properties implements Serializable {
     private boolean linkAnimation;
     private boolean linkShowInfo;
     private boolean linkBackMode;
+
+    /**
+     * 连线方案列表（VinXiangQi 方案/窗口句柄适配）
+     */
+    private List<LinkScheme> linkSchemeList;
+
+    /**
+     * 当前选中的连线方案名称
+     */
+    private String selectedLinkScheme;
 
     private List<String> openBookList;
 
@@ -181,8 +199,32 @@ public class Properties implements Serializable {
                     e.printStackTrace();
                 }
             }
+            if (prop != null) {
+                prop.ensureLinkSchemes();
+            }
         }
         return prop;
+    }
+
+    /**
+     * 保证连线方案列表存在（兼容旧版配置文件）
+     */
+    private void ensureLinkSchemes() {
+        if (linkSchemeList == null) {
+            linkSchemeList = new ArrayList<>();
+            LinkScheme manual = new LinkScheme();
+            manual.setName("手动选择窗口");
+            linkSchemeList.add(manual);
+
+            LinkScheme jj = new LinkScheme("JJ象棋（深色）", null, null, null, null);
+            linkSchemeList.add(jj);
+
+            LinkScheme ttxq = new LinkScheme("天天象棋", null, null, null, null);
+            linkSchemeList.add(ttxq);
+        }
+        if (selectedLinkScheme == null || selectedLinkScheme.isEmpty()) {
+            selectedLinkScheme = "手动选择窗口";
+        }
     }
 
     public void save() {
@@ -364,6 +406,22 @@ public class Properties implements Serializable {
         this.linkBackMode = linkBackMode;
     }
 
+    public List<LinkScheme> getLinkSchemeList() {
+        return linkSchemeList;
+    }
+
+    public void setLinkSchemeList(List<LinkScheme> linkSchemeList) {
+        this.linkSchemeList = linkSchemeList;
+    }
+
+    public String getSelectedLinkScheme() {
+        return selectedLinkScheme;
+    }
+
+    public void setSelectedLinkScheme(String selectedLinkScheme) {
+        this.selectedLinkScheme = selectedLinkScheme;
+    }
+
     public double getSplitPos2() {
         return splitPos2;
     }
@@ -443,6 +501,24 @@ public class Properties implements Serializable {
     public void setHashSize(int hashSize) {
         this.hashSize = hashSize;
     }
+
+    public String getRedEngineName() { return redEngineName; }
+    public void setRedEngineName(String redEngineName) { this.redEngineName = redEngineName; }
+
+    public String getBlackEngineName() { return blackEngineName; }
+    public void setBlackEngineName(String blackEngineName) { this.blackEngineName = blackEngineName; }
+
+    public int getRedThreadNum() { return redThreadNum; }
+    public void setRedThreadNum(int redThreadNum) { this.redThreadNum = redThreadNum; }
+
+    public int getBlackThreadNum() { return blackThreadNum; }
+    public void setBlackThreadNum(int blackThreadNum) { this.blackThreadNum = blackThreadNum; }
+
+    public int getRedHashSize() { return redHashSize; }
+    public void setRedHashSize(int redHashSize) { this.redHashSize = redHashSize; }
+
+    public int getBlackHashSize() { return blackHashSize; }
+    public void setBlackHashSize(int blackHashSize) { this.blackHashSize = blackHashSize; }
 
     public List<EngineConfig> getEngineConfigList() {
         return engineConfigList;
